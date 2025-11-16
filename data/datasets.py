@@ -66,8 +66,32 @@ def build_dataset(is_train, args):
 
     if args.data_set == 'CIFAR':
         dataset = datasets.CIFAR100(
-            args.data_path, train=is_train, transform=transform)
+            args.data_path, train=is_train, transform=transform, download=True)
         nb_classes = 100
+    elif args.data_set == 'EUROSAT':
+        # EuroSAT dataset - 10 land use and land cover classes
+        # Images are 64x64 RGB satellite imagery from Sentinel-2
+        
+        # Fix SSL certificate verification issue
+        import ssl
+        ssl._create_default_https_context = ssl._create_unverified_context
+        
+        full_dataset = datasets.EuroSAT(
+            root=args.data_path, transform=transform, download=True)
+        
+        # Split dataset: 80% train, 20% validation
+        # Use fixed seed for reproducible splits
+        from torch.utils.data import random_split
+        total_size = len(full_dataset)
+        train_size = int(0.8 * total_size)
+        val_size = total_size - train_size
+        
+        generator = torch.Generator().manual_seed(42)
+        train_dataset, val_dataset = random_split(
+            full_dataset, [train_size, val_size], generator=generator)
+        
+        dataset = train_dataset if is_train else val_dataset
+        nb_classes = 10
     elif args.data_set == 'IMNET':
         prefix = 'train' if is_train else 'val'
         data_dir = os.path.join(args.data_path, f'{prefix}.tar')
