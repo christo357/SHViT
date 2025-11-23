@@ -1,0 +1,19 @@
+==========================================
+Learning Curve Analysis for SHViT
+==========================================
+Model: shvit_s4
+Dataset: MEDMNIST
+Data Path: /research/projects/mllab/vv382/
+Base Output: learning_curve_results
+Epochs: 300
+==========================================
+
+==========================================
+Training with 0.1 of training data
+==========================================
+Completed training with fraction 0.1
+Results saved to learning_curve_results/shvit_s4_MEDMNIST_frac0.1
+
+==========================================
+Training with 0.325 of training data
+==========================================

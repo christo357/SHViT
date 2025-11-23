@@ -7,6 +7,8 @@ import json
 from torchvision import datasets, transforms
 from torchvision.datasets.folder import ImageFolder, default_loader
 import torch
+import numpy as np
+from PIL import Image
 
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
@@ -120,6 +122,49 @@ def build_dataset(is_train, args):
         dataset = INatDataset(args.data_path, train=is_train, year=2019,
                               category=args.inat_category, transform=transform)
         nb_classes = dataset.nb_classes
+    elif args.data_set == 'MEDMNIST':
+        # MedMNIST dataset - Medical image classification
+        # Options: PathMNIST (9 classes), BloodMNIST (8 classes), 
+        # DermaMNIST (7 classes), etc.
+        try:
+            import medmnist
+            from medmnist import INFO
+        except ImportError:
+            raise ImportError(
+                "MedMNIST not installed. Install with: pip install medmnist")
+        
+        # Default to PathMNIST (colon pathology)
+        data_flag = getattr(args, 'medmnist_dataset', 'pathmnist')
+        info = INFO[data_flag]
+        DataClass = getattr(medmnist, info['python_class'])
+        
+        # MedMNIST images are 28x28 or 224x224 depending on the dataset
+        # We'll resize to match input_size
+        dataset = DataClass(
+            split='train' if is_train else 'val',
+            transform=transform,
+            download=True,
+            root=args.data_path
+        )
+        
+        nb_classes = len(info['label'])
+        
+        # Wrap dataset to handle label format (MedMNIST uses array labels)
+        class MedMNISTWrapper(torch.utils.data.Dataset):
+            def __init__(self, base_dataset):
+                self.base_dataset = base_dataset
+            
+            def __len__(self):
+                return len(self.base_dataset)
+            
+            def __getitem__(self, idx):
+                img, label = self.base_dataset[idx]
+                # MedMNIST labels are numpy arrays, convert to scalar
+                if isinstance(label, np.ndarray):
+                    label = int(label[0])
+                return img, label
+        
+        dataset = MedMNISTWrapper(dataset)
     return dataset, nb_classes
 
 

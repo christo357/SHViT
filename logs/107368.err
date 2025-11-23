@@ -1,0 +1,5 @@
+/common/home/vv382/miniconda3/envs/shvit/lib/python3.9/site-packages/torchvision/transforms/transforms.py:332: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
+  warnings.warn(
+/common/home/vv382/miniconda3/envs/shvit/lib/python3.9/site-packages/torchvision/transforms/transforms.py:332: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
+  warnings.warn(
+[2025-11-23T01:28:17.103] error: *** JOB 107368 ON ilab1 CANCELLED AT 2025-11-23T01:28:17 DUE to SIGNAL Terminated ***

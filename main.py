@@ -155,8 +155,10 @@ def get_args_parser():
     # Dataset parameters
     parser.add_argument('--data-path', default='datasets/imagenet-1k', type=str,
                         help='dataset path')
-    parser.add_argument('--data-set', default='IMNET', choices=['CIFAR', 'IMNET', 'INAT', 'INAT19', 'EUROSAT'],
+    parser.add_argument('--data-set', default='IMNET', choices=['CIFAR', 'IMNET', 'INAT', 'INAT19', 'EUROSAT', 'MEDMNIST'],
                         type=str, help='Image Net dataset path')
+    parser.add_argument('--medmnist-dataset', default='pathmnist', type=str,
+                        help='MedMNIST dataset variant (pathmnist, bloodmnist, dermamnist, etc.)')
     parser.add_argument('--inat-category', default='name',
                         choices=['kingdom', 'phylum', 'class', 'order',
                                  'supercategory', 'family', 'genus', 'name'],
@@ -187,6 +189,13 @@ def get_args_parser():
                         help='url used to set up distributed training')
     parser.add_argument('--save_freq', default=1, type=int,
                         help='frequency of model saving')
+    
+    # Data efficiency analysis
+    parser.add_argument('--train-subset-fraction', default=1.0, type=float,
+                        help='Fraction of training data to use (0.0-1.0). For learning curves, use 0.1, 0.325, 0.55, 0.775, 1.0')
+    parser.add_argument('--subset-seed', default=42, type=int,
+                        help='Random seed for subset selection (for reproducibility)')
+    
     return parser
 
 
@@ -209,6 +218,17 @@ def main(args):
 
     dataset_train, args.nb_classes = build_dataset(is_train=True, args=args)
     dataset_val, _ = build_dataset(is_train=False, args=args)
+
+    # Apply training subset if specified (for data efficiency analysis)
+    if args.train_subset_fraction < 1.0:
+        subset_size = int(len(dataset_train) * args.train_subset_fraction)
+        print(f"Using {args.train_subset_fraction*100:.1f}% of training data: {subset_size}/{len(dataset_train)} samples")
+        
+        # Create reproducible subset
+        torch.manual_seed(args.subset_seed)
+        indices = torch.randperm(len(dataset_train))[:subset_size].tolist()
+        dataset_train = torch.utils.data.Subset(dataset_train, indices)
+        print(f"Training subset created with seed {args.subset_seed}")
 
     if True:  # args.distributed:
         num_tasks = utils.get_world_size()
