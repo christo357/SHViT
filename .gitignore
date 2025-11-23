@@ -4,3 +4,4 @@ __pycache__/
 *_shvit*/
 *.txt
 *results/
+logs
