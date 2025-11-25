@@ -5,3 +5,4 @@ __pycache__/
 *.txt
 *results/
 logs
+stride_experiments/

@@ -1,7 +1,0 @@
-/common/home/vv382/miniconda3/envs/shvit/lib/python3.9/site-packages/torchvision/transforms/transforms.py:332: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-/common/home/vv382/miniconda3/envs/shvit/lib/python3.9/site-packages/torchvision/transforms/transforms.py:332: UserWarning: Argument interpolation should be of type InterpolationMode instead of int. Please, use InterpolationMode enum.
-  warnings.warn(
-Failed to find state_dict_ema, starting from loaded model weights
-Failed to find state_dict_ema, starting from loaded model weights
-[2025-11-23T01:29:42.250] error: *** JOB 107369 ON ilab1 CANCELLED AT 2025-11-23T01:29:42 DUE to SIGNAL Terminated ***
