@@ -6,3 +6,6 @@ __pycache__/
 *results/
 logs
 stride_experiments/
+dataset/
+logs/
+.venv/
