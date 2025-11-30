@@ -282,13 +282,24 @@ def main(args):
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
 
     print(f"Creating model: {args.model}")
-    model = create_model(
-        args.model,
-        num_classes=args.nb_classes,
-        distillation=(args.distillation_type != 'none'),
-        pretrained=False,
-        fuse=False,
-    )
+    # Check if it's a DeiT model
+    if 'deit' in args.model.lower():
+        # For DeiT models, don't use distillation parameter
+        model = create_model(
+            args.model,
+            num_classes=args.nb_classes,
+            pretrained=False,
+        )
+    else:
+        # For other models (like your original SHViT), keep the original parameters
+        model = create_model(
+            args.model,
+            num_classes=args.nb_classes,
+            distillation=(args.distillation_type != 'none'),
+            pretrained=False,
+            fuse=False,
+        )
+
 
     if args.finetune:
         if args.finetune.startswith('https'):
