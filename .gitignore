@@ -6,4 +6,9 @@ __pycache__/
 *results/
 logs
 stride_experiments/
-analysis/
+<<<<<<< HEAD
+=======
+dataset/
+logs/
+.venv/
+>>>>>>> 38e5826fd1cc1bb2920fdeaa1cd952364a4f0242
