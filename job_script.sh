@@ -54,8 +54,8 @@ torchrun --nproc_per_node=2 --master_port 12345 main.py \
     --data-path $DATA_PATH \
     $OUTPUT_ARG \
     --epochs $EPOCHS \
-    --batch-size 256 \
-    --save_freq 50 \
+    --batch-size 128 \
+    --save_freq 30 \
     $RESUME_ARG \
     --dist-eval
 

@@ -74,7 +74,7 @@ do
         --epochs $EPOCHS \
         --batch-size 256 \
         --weight-decay 0.025 \
-        --save_freq 15 \
+        --save_freq 100 \
         $RESUME_ARG \
         --dist-eval >output.txt
     

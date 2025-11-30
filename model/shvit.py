@@ -180,10 +180,10 @@ class SHViT(torch.nn.Module):
         super().__init__()
 
         # Patch embedding
-        self.patch_embed = torch.nn.Sequential(Conv2d_BN(in_chans, embed_dim[0] // 8, 3, 2, 1), torch.nn.ReLU(),
-                           Conv2d_BN(embed_dim[0] // 8, embed_dim[0] // 4, 3, 2, 1), torch.nn.ReLU(),
-                           Conv2d_BN(embed_dim[0] // 4, embed_dim[0] // 2, 3, 2, 1), torch.nn.ReLU(),
-                           Conv2d_BN(embed_dim[0] // 2, embed_dim[0], 3, 2, 1))
+        self.patch_embed = torch.nn.Sequential(
+    Conv2d_BN(in_chans, embed_dim[0] // 8, 3, 2, 1), torch.nn.ReLU(),
+    Conv2d_BN(embed_dim[0] // 8, embed_dim[0] // 4, 3, 2, 1), torch.nn.ReLU(),
+    Conv2d_BN(embed_dim[0] // 4, embed_dim[0], 3, 2, 1))
         self.blocks1 = []
         self.blocks2 = []
         self.blocks3 = []
