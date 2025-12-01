@@ -283,8 +283,14 @@ def main(args):
 
     print(f"Creating model: {args.model}")
     # Check if it's a DeiT model
-    if 'deit' in args.model.lower():
+    if 'vit' in args.model.lower():
         # For DeiT models, don't use distillation parameter
+        model = create_model(
+            args.model,
+            num_classes=args.nb_classes,
+            pretrained=False,
+        )
+    elif 'mobile' in args.model.lower():
         model = create_model(
             args.model,
             num_classes=args.nb_classes,
