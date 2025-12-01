@@ -7,7 +7,7 @@
 #SBATCH --nodes=1                      # number of nodes
 #SBATCH --gpus=2                      # request 2 GPUs
 #SBATCH --mem-per-cpu=16G              # memory per CPU core (adjusted to standard format)
-#SBATCH --mail-user=vv382@scarletmail.rutgers.edu # email address
+#SBATCH --mail-user=cm1788@scarletmail.rutgers.edu # email address
 #SBATCH --mail-type=BEGIN,END,FAIL     # combined mail-type options
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
@@ -22,7 +22,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 
 MODEL=${1:-shvit_s1}
 DATASET=${2:-CIFAR}
-DATA_PATH=${3:-/research/projects/mllab/vv382/}
+DATA_PATH=${3:-dataset}
 BASE_OUTPUT=${4:-learning_curve_results}
 EPOCHS=${5:-50}
 
@@ -64,7 +64,7 @@ do
         echo "No existing output directory, starting from scratch"
     fi
     
-    torchrun --nproc_per_node=2 --master_port 12345 main.py \
+    torchrun --nproc_per_node=2 main.py \
         --model $MODEL \
         --data-set $DATASET \
         --data-path $DATA_PATH \
