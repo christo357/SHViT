@@ -253,6 +253,7 @@ def main():
         '--results-dir',
         type=str,
         required=True,
+        default='results/', 
         help='Directory containing learning curve results (experiment roots)',
     )
     parser.add_argument(
@@ -267,7 +268,7 @@ def main():
     dataset_name = args.dataset
 
     # Models to plot together
-    MODELS = ['shvit_s1', 'deit_tiny_patch16_224']
+    MODELS = ['shvit_s1', 'shvit_s2', 'shvit_s3' , 'deit_tiny_patch16_224', 'mobilenetv2_100']
 
     all_results = {}
 

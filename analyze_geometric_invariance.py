@@ -2,38 +2,39 @@
 Geometric & Color Invariance Analysis
 
 Evaluates how robust models are to:
-  - Rotations (0, 15, 30, 45 degrees)
+  - Rotations (e.g., 30, 60, 90, 120, 150, 180 degrees)
   - Color changes (RGB vs grayscale)
-  - Resizing / resolution changes (0.5x, 0.75x, 1.0x)
+  - Cropping (different crop scales, then upsampled back)
 
-Uses:
-  - SHViT model: shvit_s2
-  - Baseline: deit_tiny
+Supports multiple models:
+  - default: baseline + shvit_s2
+  - or pass --models modelA modelB modelC ...
 
 Checkpoints:
-  results/deit_tiny_<DATASET>_frac1.0/checkpoint_99.pth (CIFAR)
-  results/shvit_s2_<DATASET>_frac1.0/checkpoint_99.pth (CIFAR)
-  For EUROSAT/MEDMNIST, uses checkpoint_29.pth by default (mirrors robustness script).
-  
-  
-to run:
-python analyze_geometric_invariance.py \
-  --dataset CIFAR \
-  --data-path dataset/ \
-  --checkpoint-dir results \
-  --device cuda
+  <checkpoint_dir>/<model>_<DATASET>_frac1.0/checkpoint_99.pth (CIFAR)
+  <checkpoint_dir>/<model>_<DATASET>_frac1.0/checkpoint_29.pth (EUROSAT/MEDMNIST)
+
+Example:
+  python analyze_geometric_invariance.py \
+    --dataset CIFAR \
+    --data-path dataset/ \
+    --checkpoint-dir results \
+    --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
+    --device cuda
 """
 
 import argparse
 from pathlib import Path
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict
 
+import numpy as np
 import torch
 import torch.nn.functional as Fnn
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 
 from timm.models import create_model
+from data import samplers  # noqa: F401
 from data.datasets import build_dataset
 from engine import evaluate
 import utils  # noqa: F401 - needed by your codebase
@@ -52,15 +53,14 @@ class GeometricCorruptionDataset(Dataset):
     """
     Wraps an existing dataset and applies geometric / color changes
     to the already-transformed image tensor (C, H, W).
+
+    mode:
+      - 'rotation': param = angle in degrees
+      - 'color':    param = 'clean' or 'grayscale'
+      - 'crop':     param = crop scale (0 < s <= 1.0)
     """
 
     def __init__(self, base_dataset, mode: str, param=None):
-        """
-        mode:
-          - 'rotation': param = angle in degrees
-          - 'color': param = 'clean' or 'grayscale'
-          - 'resize': param = scale factor (e.g., 0.5)
-        """
         self.base_dataset = base_dataset
         self.mode = mode
         self.param = param
@@ -86,32 +86,34 @@ class GeometricCorruptionDataset(Dataset):
 
         elif self.mode == "color":
             if self.param == "grayscale":
-                # Convert to grayscale then replicate to 3 channels
-                # img: (C, H, W)
                 gray = img.mean(dim=0, keepdim=True)
                 img = gray.repeat(3, 1, 1)
             # 'clean' = no change
             return img
 
-        elif self.mode == "resize":
+        elif self.mode == "crop":
+            # Center crop by a given scale, then upsample back to (H, W)
             scale = float(self.param) if self.param is not None else 1.0
+            scale = max(min(scale, 1.0), 0.01)  # clip to (0,1]
             C, H, W = img.shape
-            # Downscale to (H*scale, W*scale) then upsample back to (H, W)
-            new_h = max(1, int(H * scale))
-            new_w = max(1, int(W * scale))
-            small = Fnn.interpolate(
-                img.unsqueeze(0),
-                size=(new_h, new_w),
-                mode="bilinear",
-                align_corners=False,
-            )
-            resized = Fnn.interpolate(
-                small,
+
+            crop_h = max(1, int(H * scale))
+            crop_w = max(1, int(W * scale))
+            crop_h = min(crop_h, H)
+            crop_w = min(crop_w, W)
+
+            start_y = (H - crop_h) // 2
+            start_x = (W - crop_w) // 2
+
+            cropped = img[:, start_y:start_y + crop_h, start_x:start_x + crop_w]
+            # Upsample back to original resolution
+            cropped_up = Fnn.interpolate(
+                cropped.unsqueeze(0),
                 size=(H, W),
                 mode="bilinear",
                 align_corners=False,
             ).squeeze(0)
-            return resized
+            return cropped_up
 
         else:
             # No change
@@ -189,7 +191,8 @@ def load_state_dict_flex(net: torch.nn.Module, checkpoint: dict, model_key: str 
         print("Skipped keys (name or shape mismatch), first few:")
         for name in skipped[:10]:
             print(f"  - {name}")
-            
+
+
 def load_model_for_dataset(model_name: str, nb_classes: int, args, device: torch.device):
     checkpoint_dir = Path(args.checkpoint_dir) / f"{model_name}_{args.dataset}_frac1.0"
     if args.dataset == "CIFAR":
@@ -223,6 +226,7 @@ def load_model_for_dataset(model_name: str, nb_classes: int, args, device: torch
     net.eval()
     return net
 
+
 def evaluate_on_dataset(
     dataset: torch.utils.data.Dataset,
     model: torch.nn.Module,
@@ -246,40 +250,45 @@ def evaluate_on_dataset(
 
 
 # ------------------------------------------------------------------
-# Plotting helpers
+# Plotting helpers (multi-model)
 # ------------------------------------------------------------------
 
 
-def plot_two_model_curve(
+def plot_multi_model_curve(
     x_values: List[float],
-    acc_baseline: List[float],
-    acc_shvit: List[float],
+    acc_by_model: Dict[str, List[float]],
     x_label: str,
     title: str,
     output_path: Path,
     x_tick_labels: Optional[List[str]] = None,
 ):
     """
-    Plot baseline (deit_tiny) as dashed line, shvit_s2 as solid line.
+    Plot multiple models on the same curve plot.
+
+    - Different line styles / markers per model.
+    - Same x-axis (e.g., rotation angle, color condition index, crop scale).
     """
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    ax.plot(
-        x_values,
-        acc_baseline,
-        "--o",
-        linewidth=2,
-        markersize=6,
-        label="deit_tiny (baseline)",
-    )
-    ax.plot(
-        x_values,
-        acc_shvit,
-        "-o",
-        linewidth=2,
-        markersize=6,
-        label="shvit_s2",
-    )
+    line_styles = ["-", "--", "-.", ":"]
+    markers = ["o", "s", "^", "d", "v", "x", "P", "*"]
+
+    all_accs = []
+
+    for i, (model_name, accs) in enumerate(acc_by_model.items()):
+        style = line_styles[i % len(line_styles)]
+        marker = markers[i % len(markers)]
+
+        ax.plot(
+            x_values,
+            accs,
+            linestyle=style,
+            marker=marker,
+            linewidth=2,
+            markersize=6,
+            label=model_name,
+        )
+        all_accs.extend(accs)
 
     if x_tick_labels is not None:
         ax.set_xticks(x_values)
@@ -291,7 +300,6 @@ def plot_two_model_curve(
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.legend(fontsize=10)
 
-    all_accs = acc_baseline + acc_shvit
     if len(all_accs) > 0:
         y_min = min(all_accs) - 5
         y_max = max(all_accs) + 5
@@ -304,21 +312,172 @@ def plot_two_model_curve(
     plt.close()
 
 
+# -----------------------------------------------------------------
+# Save geometric sampler
+# -----------------------------------------------------------------
+
+
+def _tensor_to_image(img: torch.Tensor):
+    """
+    Convert CxHxW tensor (possibly normalized) to HxWxC in [0,1] for plotting.
+    """
+    img = img.detach().cpu().float()
+    img = img.permute(1, 2, 0)  # C,H,W -> H,W,C
+    img_min = img.min()
+    img = img - img_min
+    img_max = img.max()
+    if img_max > 0:
+        img = img / img_max
+    return img.numpy()
+
+
+def _save_row_figure(
+    imgs: List[torch.Tensor],
+    titles: List[str],
+    main_title: str,
+    out_path: Path,
+):
+    assert len(imgs) == len(titles)
+    n = len(imgs)
+
+    fig, axes = plt.subplots(
+        1,
+        n,
+        figsize=(2.8 * n, 3),
+        gridspec_kw={"wspace": 0.02},
+    )
+    if n == 1:
+        axes = [axes]
+
+    for ax, img, title in zip(axes, imgs, titles):
+        ax.imshow(_tensor_to_image(img))
+        ax.set_title(title, fontsize=10, pad=6)
+        ax.axis("off")
+
+    fig.suptitle(
+        main_title,
+        fontsize=14,
+        fontweight="bold",
+        y=0.98,
+        va="bottom",
+    )
+
+    plt.subplots_adjust(
+        top=0.9,
+        bottom=0.01,
+        left=0.01,
+        right=0.99,
+        wspace=0.02,
+    )
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved sample grid to {out_path}")
+
+
+def save_geometric_sample_grids(args, dataset_val):
+    """
+    For each sample index in [0, num_sample_images),
+    create three figures:
+
+      <dataset>_rotation_sample<n>.png
+      <dataset>_crop_sample<n>.png
+      <dataset>_color_sample<n>.png
+
+    Each figure is a row: [Original | variants...].
+    """
+    sample_dir = Path(getattr(args, "sample_output_dir", "outputs/geometric_sample"))
+    sample_dir.mkdir(parents=True, exist_ok=True)
+
+    num_samples = min(getattr(args, "num_sample_images", 1), len(dataset_val))
+    dataset_name = args.dataset.lower()
+
+    rotation_angles = [30, 60, 90, 120, 150, 180]
+    crop_scales = [0.25, 0.5, 0.75, 1.0]
+    color_modes = ["grayscale"]  # we show Original + Grayscale
+
+    for idx in range(num_samples):
+        base_img, _ = dataset_val[idx]  # C,H,W
+
+        # ---------------- Rotation row ----------------
+        rot_imgs = [base_img]
+        rot_titles = ["Original"]
+        rot_ds_dummy = GeometricCorruptionDataset(dataset_val, mode="rotation", param=0)
+
+        for ang in rotation_angles:
+            rot_ds_dummy.param = ang
+            img_rot = rot_ds_dummy.apply_geometric(base_img.clone())
+            rot_imgs.append(img_rot)
+            rot_titles.append(f"{ang}°")
+
+        out_path = sample_dir / f"{dataset_name}_rotation_sample{idx+1}.png"
+        _save_row_figure(
+            rot_imgs,
+            rot_titles,
+            main_title=f"Rotation Examples – {args.dataset}",
+            out_path=out_path,
+        )
+
+        # ---------------- Crop row ----------------
+        crop_imgs = [base_img]
+        crop_titles = ["Original"]
+        crop_ds_dummy = GeometricCorruptionDataset(dataset_val, mode="crop", param=1.0)
+
+        for s in crop_scales:
+            crop_ds_dummy.param = s
+            img_cropped = crop_ds_dummy.apply_geometric(base_img.clone())
+            crop_imgs.append(img_cropped)
+            crop_titles.append(f"{s:.2f}x")
+
+        out_path = sample_dir / f"{dataset_name}_crop_sample{idx+1}.png"
+        _save_row_figure(
+            crop_imgs,
+            crop_titles,
+            main_title=f"Crop Examples – {args.dataset}",
+            out_path=out_path,
+        )
+
+        # ---------------- Color row ----------------
+        color_imgs = [base_img]
+        color_titles = ["Original"]
+        color_ds_dummy = GeometricCorruptionDataset(dataset_val, mode="color", param=None)
+
+        for mode in color_modes:
+            color_ds_dummy.param = mode
+            img_color = color_ds_dummy.apply_geometric(base_img.clone())
+            title = "Grayscale" if mode == "grayscale" else mode
+            color_imgs.append(img_color)
+            color_titles.append(title)
+
+        out_path = sample_dir / f"{dataset_name}_color_sample{idx+1}.png"
+        _save_row_figure(
+            color_imgs,
+            color_titles,
+            main_title=f"Color Examples – {args.dataset}",
+            out_path=out_path,
+        )
+
+
 # ------------------------------------------------------------------
-# Specific tests
+# Specific tests (multi-model)
 # ------------------------------------------------------------------
 
 
 def run_rotation_test(
-    args, dataset_val, baseline_model, shvit_model, device
+    args,
+    dataset_val,
+    models: Dict[str, torch.nn.Module],
+    device,
 ):
     """
     Rotation invariance:
-      angles = [0, 15, 30, 45]
+      angles = [30, 60, 90, 120, 150, 180]
+    Returns:
+      angles, acc_by_model (dict: model_name -> list of accs)
     """
-    angles = [0, 15, 30, 45]
-    acc_baseline = []
-    acc_shvit = []
+    angles = [30, 60, 90, 120, 150, 180]
+    acc_by_model: Dict[str, List[float]] = {m: [] for m in models.keys()}
 
     print("\n" + "=" * 80)
     print(f"Rotation invariance test on {args.dataset}")
@@ -333,33 +492,31 @@ def run_rotation_test(
             param=angle,
         )
 
-        acc_b = evaluate_on_dataset(
-            rot_ds, baseline_model, device, args.batch_size, args.num_workers
-        )
-        acc_s = evaluate_on_dataset(
-            rot_ds, shvit_model, device, args.batch_size, args.num_workers
-        )
+        for name, net in models.items():
+            acc = evaluate_on_dataset(
+                rot_ds, net, device, args.batch_size, args.num_workers
+            )
+            acc_by_model[name].append(acc)
+            print(f"  {name:25s} Acc@1: {acc:.2f}%")
 
-        print(f"  deit_tiny  Acc@1: {acc_b:.2f}%")
-        print(f"  shvit_s2   Acc@1: {acc_s:.2f}%")
-
-        acc_baseline.append(acc_b)
-        acc_shvit.append(acc_s)
-
-    return angles, acc_baseline, acc_shvit
+    return angles, acc_by_model
 
 
 def run_color_test(
-    args, dataset_val, baseline_model, shvit_model, device
+    args,
+    dataset_val,
+    models: Dict[str, torch.nn.Module],
+    device,
 ):
     """
     Color invariance:
       conditions = ["clean", "grayscale"]
+    Returns:
+      x_vals (indices), cond_labels, acc_by_model (dict: model_name -> list)
     """
     conditions = ["clean", "grayscale"]
     x_vals = list(range(len(conditions)))
-    acc_baseline = []
-    acc_shvit = []
+    acc_by_model: Dict[str, List[float]] = {m: [] for m in models.keys()}
 
     print("\n" + "=" * 80)
     print(f"Color / grayscale invariance test on {args.dataset}")
@@ -374,61 +531,54 @@ def run_color_test(
             param=cond,
         )
 
-        acc_b = evaluate_on_dataset(
-            color_ds, baseline_model, device, args.batch_size, args.num_workers
-        )
-        acc_s = evaluate_on_dataset(
-            color_ds, shvit_model, device, args.batch_size, args.num_workers
-        )
+        for name, net in models.items():
+            acc = evaluate_on_dataset(
+                color_ds, net, device, args.batch_size, args.num_workers
+            )
+            acc_by_model[name].append(acc)
+            print(f"  {name:25s} Acc@1: {acc:.2f}%")
 
-        print(f"  deit_tiny  Acc@1: {acc_b:.2f}%")
-        print(f"  shvit_s2   Acc@1: {acc_s:.2f}%")
-
-        acc_baseline.append(acc_b)
-        acc_shvit.append(acc_s)
-
-    return x_vals, conditions, acc_baseline, acc_shvit
+    return x_vals, conditions, acc_by_model
 
 
-def run_resize_test(
-    args, dataset_val, baseline_model, shvit_model, device
+def run_crop_test(
+    args,
+    dataset_val,
+    models: Dict[str, torch.nn.Module],
+    device,
 ):
     """
-    Resize / resolution invariance:
-      scales = [0.5, 0.75, 1.0]
-    (Downscale to scale*H/W, then upsample back to H/W.)
+    Crop invariance:
+      scales = [0.25, 0.5, 0.75, 1.0]
+    (Center crop to scale*H/W, then upsample back to H/W.)
+
+    Returns:
+      scales, acc_by_model
     """
     scales = [0.25, 0.5, 0.75, 1.0]
-    acc_baseline = []
-    acc_shvit = []
+    acc_by_model: Dict[str, List[float]] = {m: [] for m in models.keys()}
 
     print("\n" + "=" * 80)
-    print(f"Resize / scale invariance test on {args.dataset}")
+    print(f"Crop invariance test on {args.dataset}")
     print("=" * 80)
 
     for scale in scales:
-        print(f"\nScale factor: {scale}x")
+        print(f"\nCrop scale: {scale}x")
 
-        resize_ds = GeometricCorruptionDataset(
+        crop_ds = GeometricCorruptionDataset(
             base_dataset=dataset_val,
-            mode="resize",
+            mode="crop",
             param=scale,
         )
 
-        acc_b = evaluate_on_dataset(
-            resize_ds, baseline_model, device, args.batch_size, args.num_workers
-        )
-        acc_s = evaluate_on_dataset(
-            resize_ds, shvit_model, device, args.batch_size, args.num_workers
-        )
+        for name, net in models.items():
+            acc = evaluate_on_dataset(
+                crop_ds, net, device, args.batch_size, args.num_workers
+            )
+            acc_by_model[name].append(acc)
+            print(f"  {name:25s} Acc@1: {acc:.2f}%")
 
-        print(f"  deit_tiny  Acc@1: {acc_b:.2f}%")
-        print(f"  shvit_s2   Acc@1: {acc_s:.2f}%")
-
-        acc_baseline.append(acc_b)
-        acc_shvit.append(acc_s)
-
-    return scales, acc_baseline, acc_shvit
+    return scales, acc_by_model
 
 
 # ------------------------------------------------------------------
@@ -441,9 +591,18 @@ def get_args_parser():
         "Geometric & Color Invariance Analysis", add_help=True
     )
 
-    # Models – match what you trained
-    parser.add_argument("--baseline-model", default="deit_tiny_patch16_224", type=str)
+    # Old-style two-model args (kept for backward compatibility)
+    parser.add_argument("--baseline-model", default="mobilenetv2_100", type=str)
     parser.add_argument("--shvit-model", default="shvit_s2", type=str)
+
+    # NEW: multi-model arg – overrides baseline/shvit if provided
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        type=str,
+        default=None,
+        help="List of model names to evaluate. If set, overrides baseline/shvit.",
+    )
 
     # Dataset settings (same as robustness script)
     parser.add_argument(
@@ -485,6 +644,19 @@ def get_args_parser():
         type=str,
     )
 
+    parser.add_argument(
+        "--sample-output-dir",
+        default="outputs/geometric_sample",
+        type=str,
+        help="Directory to save geometric sample images.",
+    )
+    parser.add_argument(
+        "--num-sample-images",
+        default=4,
+        type=int,
+        help="Number of sample images to visualize per geometric setting.",
+    )
+
     return parser
 
 
@@ -496,63 +668,69 @@ def main():
     args.data_set = args.dataset  # some parts of your code may expect this
     args.data_path = args.data_path
 
+    # Decide which models to use
+    if args.models is not None and len(args.models) > 0:
+        model_names = args.models
+    else:
+        # fallback to the original two-model interface
+        model_names = [args.baseline_model, args.shvit_model]
+
     # 1) Build eval dataset and infer num classes
     dataset_val, nb_classes = build_eval_dataset_and_num_classes(args)
 
-    # 2) Load baseline and shvit models from frac1.0 checkpoints
-    baseline_model = load_model_for_dataset(
-        args.baseline_model, nb_classes, args, device
-    )
-    shvit_model = load_model_for_dataset(
-        args.shvit_model, nb_classes, args, device
-    )
+    # Optional: save visualization grids
+    # save_geometric_sample_grids(args, dataset_val)
+
+    # 2) Load all requested models from frac1.0 checkpoints
+    models: Dict[str, torch.nn.Module] = {}
+    for mname in model_names:
+        models[mname] = load_model_for_dataset(
+            mname, nb_classes, args, device
+        )
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # ---------------- Rotation ----------------
-    angles, acc_b_rot, acc_s_rot = run_rotation_test(
-        args, dataset_val, baseline_model, shvit_model, device
+    angles, acc_rot_by_model = run_rotation_test(
+        args, dataset_val, models, device
     )
-    plot_two_model_curve(
+    plot_multi_model_curve(
         x_values=angles,
-        acc_baseline=acc_b_rot,
-        acc_shvit=acc_s_rot,
+        acc_by_model=acc_rot_by_model,
         x_label="Rotation (degrees)",
         title=f"{args.dataset}: Rotation Invariance",
-        output_path=out_dir / f"{args.dataset}_rotation.png",
+        output_path=out_dir / f"{args.dataset}_rotation_multi.png",
         x_tick_labels=[str(a) for a in angles],
     )
 
     # ---------------- Color / grayscale ----------------
-    x_vals, cond_labels, acc_b_color, acc_s_color = run_color_test(
-        args, dataset_val, baseline_model, shvit_model, device
+    x_vals, cond_labels, acc_color_by_model = run_color_test(
+        args, dataset_val, models, device
     )
-    plot_two_model_curve(
+    plot_multi_model_curve(
         x_values=x_vals,
-        acc_baseline=acc_b_color,
-        acc_shvit=acc_s_color,
+        acc_by_model=acc_color_by_model,
         x_label="Color condition",
         title=f"{args.dataset}: Color / Grayscale Invariance",
-        output_path=out_dir / f"{args.dataset}_color.png",
+        output_path=out_dir / f"{args.dataset}_color_multi.png",
         x_tick_labels=cond_labels,
     )
 
-    # ---------------- Resize / scale ----------------
-    scales, acc_b_resize, acc_s_resize = run_resize_test(
-        args, dataset_val, baseline_model, shvit_model, device
+    # ---------------- Crop ----------------
+    scales, acc_crop_by_model = run_crop_test(
+        args, dataset_val, models, device
     )
-    plot_two_model_curve(
+    plot_multi_model_curve(
         x_values=scales,
-        acc_baseline=acc_b_resize,
-        acc_shvit=acc_s_resize,
-        x_label="Resize scale (downscale factor)",
-        title=f"{args.dataset}: Resize / Scale Invariance",
-        output_path=out_dir / f"{args.dataset}_resize.png",
+        acc_by_model=acc_crop_by_model,
+        x_label="Crop scale (relative area)",
+        title=f"{args.dataset}: Crop Invariance",
+        output_path=out_dir / f"{args.dataset}_crop_multi.png",
         x_tick_labels=[f"{s:.2f}x" for s in scales],
     )
 
-    print("\n✓ Geometric & color invariance analysis complete!")
+    print("\n✓ Geometric (rotation, color, crop) invariance analysis complete!")
 
 
 if __name__ == "__main__":

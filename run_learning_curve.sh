@@ -6,12 +6,14 @@
 #SBATCH --ntasks=4                     # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1                      # number of nodes
 #SBATCH --gpus=2                      # request 2 GPUs
-#SBATCH --mem-per-cpu=16G              # memory per CPU core (adjusted to standard format)
+#SBATCH --mem-per-cpu=24G              # memory per CPU core (adjusted to standard format)
 #SBATCH --mail-user=cm1788@scarletmail.rutgers.edu # email address
 #SBATCH --mail-type=BEGIN,END,FAIL     # combined mail-type options
 
 # Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
 #module load cuda
@@ -19,6 +21,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
 # Learning Curve Analysis for SHViT
 # Trains models on 10%, 32.5%, 55%, 77.5%, and 100% of training data
 # All models are evaluated on the same full test set
+# MODELS: shvit_s1, shvit_s2, ..., deit_tiny_patch16_224, deit_tiny_distilled_patch16_224, mobilenetv2_100
 
 MODEL=${1:-shvit_s1}
 DATASET=${2:-CIFAR}
@@ -37,7 +40,9 @@ echo "Epochs: $EPOCHS"
 echo "=========================================="
 
 # Five training data fractions: 10%, 32.5%, 55%, 77.5%, 100%
-FRACTIONS=(0.1 0.325 0.55 0.775 1.0)
+# FRACTIONS=(0.1 0.325 0.55 0.775 1.0)
+FRACTIONS=(0.1 0.325 )
+
 
 for fraction in "${FRACTIONS[@]}"
 do
