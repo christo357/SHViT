@@ -4,19 +4,24 @@ This repository is built upon the official implementation of [**SHViT: Single-He
 
 This work presents a comprehensive analysis of the SHViT model, comparing it with baseline models (MobileNetV2 and DeiT-Tiny) across various dimensions including robustness, data efficiency, representation similarity, and geometric invariance.
 
-**Collaborators:** Vishal V, Priyal Garg
+**Contributors:** [Vishal V](https://github.com/VizalV) • [Priyal Garg](https://github.com/gargpriyal)
+
+> *Note: If the GitHub usernames above are incorrect, please provide the correct ones to update the links.*
 
 ---
 
 ## 🤗 Pre-trained Models on Hugging Face
 
-Fine-tuned **SHViT-S2** models are available on Hugging Face Hub for easy use and reproducibility:
+Fine-tuned **SHViT** models are available on Hugging Face Hub for easy use and reproducibility:
 
 | Model | Dataset | Accuracy | HuggingFace |
 |-------|---------|----------|-------------|
 | SHViT-S2 | CIFAR-100 | 72.64% | [🤗 christo357/shvit-s2-cifar](https://huggingface.co/christo357/shvit-s2-cifar) |
 | SHViT-S2 | EuroSAT | 93.83% | [🤗 christo357/shvit-s2-eurosat](https://huggingface.co/christo357/shvit-s2-eurosat) |
 | SHViT-S2 | MedMNIST (PathMNIST) | 98.05% | [🤗 christo357/shvit-s2-medmnist](https://huggingface.co/christo357/shvit-s2-medmnist) |
+| SHViT-S3 | CIFAR-100 | 68.59% | [🤗 christo357/shvit-s3-cifar](https://huggingface.co/christo357/shvit-s3-cifar) |
+| SHViT-S3 | EuroSAT | 94.52% | [🤗 christo357/shvit-s3-eurosat](https://huggingface.co/christo357/shvit-s3-eurosat) |
+| SHViT-S3 | MedMNIST (PathMNIST) | 98.04% | [🤗 christo357/shvit-s3-medmnist](https://huggingface.co/christo357/shvit-s3-medmnist) |
 
 ### Quick Start
 
