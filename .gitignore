@@ -10,3 +10,4 @@ dataset/
 logs/
 .venv/
 outputs/
+.env

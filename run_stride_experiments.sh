@@ -1,3 +1,5 @@
+# script for running analyze_patchify_stride.py for stride experiments
+
 #!/bin/bash
 #SBATCH --job-name=shvit_stride_exp
 #SBATCH --output=logs/%j.out
@@ -83,4 +85,4 @@ echo "All Stride Experiments Complete!"
 echo "=========================================="
 echo ""
 echo "To analyze results, run:"
-echo "python test_patchify_stride.py --model ${MODEL} --datasets ${DATASET} --checkpoint-dir ${BASE_OUTPUT}"
+echo "python analyze_patchify_stride.py --model ${MODEL} --datasets ${DATASET} --checkpoint-dir ${BASE_OUTPUT}"

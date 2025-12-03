@@ -1,3 +1,5 @@
+# slurm script for running the main.py
+
 #!/bin/bash
 #SBATCH --job-name=shvit_learning_curve # Job name
 #SBATCH --output=logs/%j.out  # Output file (%x is job name, %j is jobID)
@@ -21,7 +23,11 @@ export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 # Learning Curve Analysis for SHViT
 # Trains models on 10%, 32.5%, 55%, 77.5%, and 100% of training data
 # All models are evaluated on the same full test set
-# MODELS: shvit_s1, shvit_s2, ..., deit_tiny_patch16_224, deit_tiny_distilled_patch16_224, mobilenetv2_100
+# MODELS: shvit_s1, shvit_s2, ..., deit_tiny_patch16_224, deit_tiny_distilled_patch16_224, mobilenetv2_100, levit_256
+
+# sbatch -w ilab3 run_learning_curve2.sh levit_256 CIFAR dataset/ results 100
+# sbatch -w ilab4 run_learning_curve2.sh levit_256 EUROSAT dataset/ results 30
+# sbatch -w ilab1 run_learning_curve2.sh levit_256 MEDMNIST dataset/ results 30
 
 MODEL=${1:-shvit_s1}
 DATASET=${2:-CIFAR}
@@ -40,8 +46,8 @@ echo "Epochs: $EPOCHS"
 echo "=========================================="
 
 # Five training data fractions: 10%, 32.5%, 55%, 77.5%, 100%
-# FRACTIONS=(0.1 0.325 0.55 0.775 1.0)
-FRACTIONS=(0.1 0.325 )
+FRACTIONS=(0.1 0.325 0.55 0.775 1.0)
+# FRACTIONS=(0.55 0.775)
 
 
 for fraction in "${FRACTIONS[@]}"

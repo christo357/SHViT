@@ -1,21 +1,340 @@
-# SHViT: Single-Head Vision Transformer with Memory Efficient Macro Design
+# SHViT Analysis: Comprehensive Model Evaluation and Comparison
 
-This is the official repository of 
+This repository is built upon the official implementation of [**SHViT: Single-Head Vision Transformer with Memory Efficient Macro Design**](https://arxiv.org/abs/2401.16456) (Seokju Yun, Youngmin Ro. CVPR 2024). 
 
-[**SHViT: Single-Head Vision Transformer with Memory Efficient Macro Design**](https://arxiv.org/abs/2401.16456)
-*Seokju Yun, Youngmin Ro.* CVPR 2024
+This work presents a comprehensive analysis of the SHViT model, comparing it with baseline models (MobileNetV2 and DeiT-Tiny) across various dimensions including robustness, data efficiency, representation similarity, and geometric invariance.
 
-![SHViT Performance](acc_vs_thro.png)
+**Collaborators:** Vishal V, Priyal Garg
+
+---
+
+## 🤗 Pre-trained Models on Hugging Face
+
+Fine-tuned **SHViT-S2** models are available on Hugging Face Hub for easy use and reproducibility:
+
+| Model | Dataset | Accuracy | HuggingFace |
+|-------|---------|----------|-------------|
+| SHViT-S2 | CIFAR-100 | 72.64% | [🤗 christo357/shvit-s2-cifar](https://huggingface.co/christo357/shvit-s2-cifar) |
+| SHViT-S2 | EuroSAT | 93.83% | [🤗 christo357/shvit-s2-eurosat](https://huggingface.co/christo357/shvit-s2-eurosat) |
+| SHViT-S2 | MedMNIST (PathMNIST) | 98.05% | [🤗 christo357/shvit-s2-medmnist](https://huggingface.co/christo357/shvit-s2-medmnist) |
+
+### Quick Start
+
+```python
+from huggingface_hub import hf_hub_download
+import torch
+from timm import create_model
+
+# Download checkpoint
+checkpoint_path = hf_hub_download(
+    repo_id="christo357/shvit-s2-cifar",
+    filename="checkpoint_99.pth"
+)
+
+# Load model
+checkpoint = torch.load(checkpoint_path, map_location='cpu')
+model = create_model('shvit_s2', num_classes=100, pretrained=False)
+model.load_state_dict(checkpoint['model'])
+model.eval()
+```
+
+---
+
+## Table of Contents
+- [Pre-trained Models](#-pre-trained-models-on-hugging-face)
+- [Overview](#overview)
+- [Analysis Scripts](#analysis-scripts)
+- [Original SHViT](#original-shvit)
+- [Setup](#setup)
+- [Citation](#citation)
+
+---
+
+## Overview
+
+This repository extends the official SHViT implementation with extensive analysis tools to evaluate and compare vision transformer architectures. All analysis scripts (prefixed with `analyze_`) provide comprehensive model comparisons across multiple datasets (CIFAR-100, EuroSAT, MedMNIST).
+
+**Key Features:**
+- Multi-model comparison framework (SHViT variants, DeiT-Tiny, MobileNetV2)
+- Robustness evaluation under various corruptions
+- Data efficiency and learning curve analysis
+- Representation similarity metrics (CKA, CCA)
+- Geometric invariance testing
+- Domain adaptation and transfer learning analysis
+
+---
+
+## Analysis Scripts
+
+### `analyze_learning_curve.py`
+**Purpose:** Analyzes model performance across different training data fractions to evaluate data efficiency.
+
+**Key Features:**
+- Extracts test accuracy from training logs for multiple data fractions (10%, 32.5%, 55%, 77.5%, 100%)
+- Generates learning curves comparing multiple models on the same dataset
+- Computes data efficiency metrics:
+  - Accuracy gap between 10% and 100% data
+  - Data efficiency score (ratio of performance at limited vs. full data)
+  - Training data required to reach 90% of final performance
+- Produces both linear and log-scale visualizations
+
+**Example Usage:**
+```bash
+python analyze_learning_curve.py \
+  --results-dir results/ \
+  --dataset CIFAR
+```
+
+**Outputs:**
+- Learning curve plots (linear and log-scale)
+- Data efficiency metrics in JSON format
+- Per-model performance analysis
+
+---
+
+### `analyze_robustness_vs_data.py`
+**Purpose:** Evaluates how model robustness to corruptions scales with training data size.
+
+**Key Features:**
+- Tests multiple corruption types (Gaussian noise, blur, brightness, contrast, fog, JPEG compression, pixelation)
+- Evaluates clean and corrupted accuracy across different training data fractions
+- Supports multi-model comparison with different line styles
+- Focuses on severity level 3 for consistent comparison
+
+**Corruption Types:**
+- **Noise:** Gaussian noise, shot noise, impulse noise
+- **Blur:** Gaussian blur
+- **Weather:** Fog
+- **Digital:** JPEG compression, pixelation, brightness, contrast
+
+**Example Usage:**
+```bash
+python analyze_robustness_vs_data.py \
+  --dataset CIFAR \
+  --data-path dataset \
+  --checkpoint-dir results \
+  --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
+  --device cuda
+```
+
+**Outputs:**
+- Clean accuracy vs. training data plots
+- Robustness curves for each corruption type
+- JSON files with detailed accuracy measurements
+
+---
+
+### `analyze_geometric_invariance.py`
+**Purpose:** Tests model robustness to geometric transformations and color variations.
+
+**Key Features:**
+- **Rotation Test:** Evaluates performance under rotations (30°, 60°, 90°, 120°, 150°, 180°)
+- **Color Test:** Compares clean RGB vs. grayscale performance
+- **Crop Test:** Tests robustness to different crop scales (0.25x, 0.5x, 0.75x, 1.0x)
+- Multi-model comparison with configurable model lists
+- Optional visualization of transformed images
+
+**Example Usage:**
+```bash
+python analyze_geometric_invariance.py \
+  --dataset CIFAR \
+  --data-path dataset/ \
+  --checkpoint-dir results \
+  --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
+  --device cuda
+```
+
+**Outputs:**
+- Rotation invariance curves
+- Color/grayscale comparison plots
+- Crop scale invariance analysis
+- Optional sample image grids showing transformations
+
+---
+
+### `analyze_domain_shift.py`
+**Purpose:** Evaluates model transferability across different domains through fine-tuning experiments.
+
+**Key Features:**
+- Feature transfer from source to target dataset
+- Fine-tuning with target domain data
+- Compares transfer learning performance across models
+- Tests domain adaptation capability (e.g., CIFAR → EuroSAT)
+
+**Workflow:**
+1. Load checkpoint trained on source dataset (frac=1.0)
+2. Initialize new classifier head for target dataset
+3. Transfer backbone weights
+4. Fine-tune on target dataset
+5. Evaluate and compare final accuracy
+
+**Example Usage:**
+```bash
+python analyze_domain_shift.py \
+  --source-dataset CIFAR \
+  --target-dataset EUROSAT \
+  --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
+  --data-path dataset \
+  --checkpoint-dir results \
+  --ft-epochs 10 \
+  --device cuda
+```
+
+**Outputs:**
+- Transfer learning accuracy comparison
+- Bar plots showing domain adaptation performance
+- JSON files with detailed transfer metrics
+
+---
+
+### `analyze_rep_similarity.py`
+**Purpose:** Measures representation similarity between SHViT and baseline models using multiple metrics.
+
+**Key Features:**
+- **CKA (Centered Kernel Alignment):** Measures overall representation similarity
+- **Class-mean cosine similarity:** Compares per-class feature representations
+- Extracts penultimate layer features for comparison
+- Works with any two models with compatible architectures
+
+**Metrics Explained:**
+- **CKA Score:** Value between 0 and 1, where 1 indicates identical representations
+- **Class-mean Cosine:** Average cosine similarity between class centroids
+
+**Example Usage:**
+```bash
+python analyze_rep_similarity.py \
+  --model-a shvit_s2 \
+  --ckpt-a results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
+  --model-b deit_tiny_patch16_224 \
+  --ckpt-b results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth \
+  --dataset CIFAR \
+  --data-path dataset/ \
+  --output-dir outputs/rep_similarity
+```
+
+**Outputs:**
+- CKA similarity scores
+- Per-class cosine similarity metrics
+- Optional raw feature matrices (with `--save-features`)
+
+---
+
+### `analyze_representations.py`
+**Purpose:** Comprehensive layer-wise representation analysis comparing SHViT and DeiT architectures.
+
+**Key Features:**
+- Layer-wise feature extraction from multiple network stages
+- CKA similarity matrices across all layer pairs
+- CCA (Canonical Correlation Analysis) for subspace similarity
+- Feature statistics (mean, variance, sparsity)
+- Similarity progression through network depth
+- Separate analysis for early, middle, and late layers
+
+**Visualizations:**
+- CKA heatmap showing similarity between all layer pairs
+- Feature statistics comparison (mean, std, sparsity, max, min)
+- Similarity progression by network depth (early/middle/late/output)
+
+**Example Usage:**
+```bash
+python analyze_representations.py \
+  --shvit-checkpoint results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
+  --deit-checkpoint results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth \
+  --shvit-model shvit_s2 \
+  --deit-model deit_tiny_patch16_224 \
+  --data-path dataset/ \
+  --data-set CIFAR \
+  --nb-classes 100 \
+  --output-dir representation_analysis/
+```
+
+**Outputs:**
+- CKA matrix heatmap
+- Feature statistics plots
+- Similarity progression analysis
+- Comprehensive JSON with all metrics
+
+---
+
+### `analyze_gradcam_compare.py`
+**Purpose:** Qualitative saliency map comparison to understand model attention patterns.
+
+**Key Features:**
+- Gradient-based saliency map computation
+- Identifies examples where one model is robust while the other fails
+- Compares attention patterns on clean vs. corrupted images
+- Four-panel visualization showing both models on both conditions
+
+**Search Strategy:**
+- Finds cases where Model A is correct but Model B fails under corruption
+- Finds symmetric cases where Model B is correct but Model A fails
+- Requires both models to be correct on clean images
+
+**Example Usage:**
+```bash
+python analyze_gradcam_compare.py \
+  --model-a shvit_s2 \
+  --ckpt-a results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
+  --model-b deit_tiny_patch16_224 \
+  --ckpt-b results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth \
+  --dataset CIFAR \
+  --data-path dataset/ \
+  --severity 3 \
+  --max-search 300 \
+  --output-dir outputs/saliency
+```
+
+**Outputs:**
+- Four-panel saliency visualizations (clean + corrupted for both models)
+- Examples highlighting differential robustness patterns
+
+---
+
+### `analyze_patchify_stride.py`
+**Purpose:** Investigates how patchify stride affects domain generalization and performance.
+
+**Key Features:**
+- Tests multiple patchify strides: 4, 8, 16 (original), 32
+- Evaluates impact on spatial resolution and token count
+- Measures domain-specific sensitivity to stride changes
+- Custom SHViT implementation with configurable stride
+
+**Research Questions:**
+- Does patchify stride interact with domain characteristics?
+- How does stride affect spatial complexity handling?
+- What is the optimal stride for different dataset types?
+
+**Example Usage:**
+```bash
+python analyze_patchify_stride.py \
+  --model shvit_s2 \
+  --datasets CIFAR EUROSAT MEDMNIST \
+  --checkpoint-dir stride_experiments \
+  --strides 8 16 32
+```
+
+**Outputs:**
+- Stride sensitivity analysis by domain
+- Number of patches vs. accuracy
+- Domain variance metrics (sensitivity to stride)
+
+---
+
+## Original SHViT
 
 <details>
   <summary>
-  <font size="+1">Abstract</font>
+  <font size="+1">About SHViT</font>
   </summary>
+
+[**SHViT: Single-Head Vision Transformer with Memory Efficient Macro Design**](https://arxiv.org/abs/2401.16456)  
+*Seokju Yun, Youngmin Ro.* CVPR 2024
+
 Recently, efficient Vision Transformers have shown great performance with low latency on resource-constrained devices. Conventionally, they use 4x4 patch embeddings and a 4-stage structure at the macro level, while utilizing sophisticated attention with multi-head configuration at the micro level. This paper aims to address computational redundancy at all design levels in a memory-efficient manner. We discover that using larger-stride patchify stem not only reduces memory access costs but also achieves competitive performance by leveraging token representations with reduced spatial redundancy from the early stages. Furthermore, our preliminary analyses suggest that attention layers in the early stages can be substituted with convolutions, and several attention heads in the latter stages are computationally redundant. To handle this, we introduce a single-head attention module that inherently prevents head redundancy and simultaneously boosts accuracy by parallelly combining global and local information. Building upon our solutions, we introduce SHViT, a Single-Head Vision Transformer that obtains the state-of-the-art speed-accuracy tradeoff. For example, on ImageNet-1k, our SHViT-S4 is 3.3x, 8.1x, and 2.4x faster than MobileViTv2 x1.0 on GPU, CPU, and iPhone12 mobile device, respectively, while being 1.3% more accurate. For object detection and instance segmentation on MS COCO using Mask-RCNN head, our model achieves performance comparable to FastViT-SA12 while exhibiting 3.8x and 2.0x lower backbone latency on GPU and mobile device, respectively.
+
 </details>
 
-
-## Pre-trained Models
+### Pre-trained Models
 | name | resolution | acc | #params | FLOPs | Throughput | model |
 |:---:|:---:|:---:|:---:| :---:|:---:|:---:|
 | SHViT-S1 | 224x224 | 72.8 | 6.3M | 241M | 33489 |[model](https://github.com/ysj9909/SHViT/releases/download/v1.0/shvit_s1.pth) |
@@ -23,11 +342,11 @@ Recently, efficient Vision Transformers have shown great performance with low la
 | SHViT-S3 | 224x224 | 77.4 | 14.2M | 601M | 20522 | [model](https://github.com/ysj9909/SHViT/releases/download/v1.0/shvit_s3.pth) |
 | SHViT-S4 | 256x256 | 79.4 | 16.5M | 986M | 14283 | [model](https://github.com/ysj9909/SHViT/releases/download/v1.0/shvit_s4.pth) |
 
+---
 
-## Training
-### Image Classification
+## Setup
 
-#### Setup
+### Environment Setup
 ```bash
 conda create -n shvit python=3.9
 conda activate shvit
@@ -35,7 +354,7 @@ conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit
 pip install -r requirements.txt
 ```
 
-#### Dataset Preparation
+### Dataset Preparation
 
 Download the [ImageNet-1K](http://image-net.org/) dataset and structure the data as follows:
 ```
@@ -52,14 +371,21 @@ Download the [ImageNet-1K](http://image-net.org/) dataset and structure the data
       img4.jpeg
 ```
 
+### Training
+
 To train SHViT models, follow the respective command below:
+
 <details>
 <summary>
 SHViT-S1
 </summary>
 
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py --model shvit_s1 --data-path $PATH_TO_IMAGENET --dist-eval --weight-decay 0.025
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py \
+  --model shvit_s1 \
+  --data-path $PATH_TO_IMAGENET \
+  --dist-eval \
+  --weight-decay 0.025
 ```
 </details>
 
@@ -68,8 +394,12 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_
 SHViT-S2
 </summary>
 
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py --model shvit_s2 --data-path $PATH_TO_IMAGENET --dist-eval --weight-decay 0.032
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py \
+  --model shvit_s2 \
+  --data-path $PATH_TO_IMAGENET \
+  --dist-eval \
+  --weight-decay 0.032
 ```
 </details>
 
@@ -78,8 +408,12 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_
 SHViT-S3
 </summary>
 
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py --model shvit_s3 --data-path $PATH_TO_IMAGENET --dist-eval --weight-decay 0.035
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py \
+  --model shvit_s3 \
+  --data-path $PATH_TO_IMAGENET \
+  --dist-eval \
+  --weight-decay 0.035
 ```
 </details>
 
@@ -88,38 +422,48 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_
 SHViT-S4
 </summary>
 
-```
-python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py --model shvit_s4 --data-path $PATH_TO_IMAGENET --dist-eval --weight-decay 0.03 --input-size 256
+```bash
+python -m torch.distributed.launch --nproc_per_node=8 --master_port 12345 --use_env main.py \
+  --model shvit_s4 \
+  --data-path $PATH_TO_IMAGENET \
+  --dist-eval \
+  --weight-decay 0.03 \
+  --input-size 256
 ```
 </details>
 
-
-## Evaluation
-Run the following command to evaluate a pre-trained SHViT-S4 on ImageNet-1K validation set with a single GPU:
+### Evaluation
+Run the following command to evaluate a pre-trained SHViT-S4 on ImageNet-1K validation set:
 ```bash
-python main.py --eval --model shvit_s4 --resume ./shvit_s4.pth --data-path $PATH_TO_IMAGENET --input-size 256
+python main.py \
+  --eval \
+  --model shvit_s4 \
+  --resume ./shvit_s4.pth \
+  --data-path $PATH_TO_IMAGENET \
+  --input-size 256
 ```
 
-
-## Latency Measurement
-Run the following command to compare the throughputs on GPU/CPU:
-
-```
+### Latency Measurement
+Compare throughputs on GPU/CPU:
+```bash
 python speed_test.py
 ```
 
-The mobile latency reported in SHViT for iPhone 12 uses the deployment tool from [XCode 14](https://developer.apple.com/videos/play/wwdc2022/10027/).
-
-export the model to Core ML model
-
+For mobile latency (iPhone 12), use [XCode 14](https://developer.apple.com/videos/play/wwdc2022/10027/) deployment tools. Export the model to Core ML format:
+```bash
+python export_model.py \
+  --variant shvit_s4 \
+  --output-dir /path/to/save/exported_model \
+  --checkpoint /path/to/pretrained_checkpoints/shvit_s4.pth
 ```
-python export_model.py --variant shvit_s4 --output-dir /path/to/save/exported_model \
---checkpoint /path/to/pretrained_checkpoints/shvit_s4.pth
-```
+
+---
 
 ## Citation
-If our work or code help your work, please cite our paper:
-```
+
+If you use this work or code in your research, please cite:
+
+```bibtex
 @inproceedings{yun2024shvit,
   author={Yun, Seokju and Ro, Youngmin},
   title={SHViT: Single-Head Vision Transformer with Memory Efficient Macro Design},
@@ -129,5 +473,20 @@ If our work or code help your work, please cite our paper:
 }
 ```
 
+---
+
 ## Acknowledgements
-We sincerely appreciate [Swin Transformer](https://github.com/microsoft/swin-transformer), [LeViT](https://github.com/facebookresearch/LeViT), [pytorch-image-models](https://github.com/rwightman/pytorch-image-models), [EfficientViT](https://github.com/microsoft/Cream/tree/main/EfficientViT) and [PyTorch](https://github.com/pytorch/pytorch) for their wonderful implementations.
+
+We sincerely appreciate:
+- [SHViT Official Repository](https://github.com/ysj9909/SHViT) - The foundation of this work
+- [Swin Transformer](https://github.com/microsoft/swin-transformer)
+- [LeViT](https://github.com/facebookresearch/LeViT)
+- [pytorch-image-models](https://github.com/rwightman/pytorch-image-models)
+- [EfficientViT](https://github.com/microsoft/Cream/tree/main/EfficientViT)
+- [PyTorch](https://github.com/pytorch/pytorch)
+
+---
+
+## License
+
+This project follows the same license as the original SHViT repository. See [LICENSE](LICENSE) for details.

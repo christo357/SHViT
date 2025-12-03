@@ -9,6 +9,12 @@ Compares SHViT with different patchify strides across domains:
 
 Research Question: Does patchify stride interact with domain characteristics 
 (spatial complexity, dataset size, detail requirements)?
+
+To run:
+python analyze_patchify_stride.py 
+    --model shvit_s2 
+    --datasets CIFAR 
+    --checkpoint-dir results/
 """
 
 import argparse

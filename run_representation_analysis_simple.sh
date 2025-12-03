@@ -1,3 +1,5 @@
+# script for running analyze_representations.py
+
 #!/bin/bash
 
 # Simple Representation Analysis Runner (no SLURM required)
@@ -8,10 +10,10 @@ SHVIT_MODEL="shvit_s2"
 DEIT_MODEL="deit_tiny_patch16_224"
 DATASET="CIFAR"
 NUM_CLASSES=100
-DATA_PATH="/research/projects/mllab/vv382/"
+DATA_PATH="dataset/"
 
 # Model checkpoints
-SHVIT_CHECKPOINT="results/shvit_s2_CIFAR_frac1.0/checkpoint_0.pth"
+SHVIT_CHECKPOINT="results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth"
 DEIT_CHECKPOINT="results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth"
 
 # Output directory
@@ -44,7 +46,7 @@ python analyze_representations.py \
     --data-set "$DATASET" \
     --nb-classes $NUM_CLASSES \
     --input-size 224 \
-    --batch-size 128 \
+    --batch-size 256 \
     --max-batches 50 \
     --num-workers 4 \
     --output-dir "$OUTPUT_DIR"
