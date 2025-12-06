@@ -72,16 +72,7 @@ This repository extends the official SHViT implementation with extensive analysi
 ## Analysis Scripts
 
 ### `analyze_learning_curve.py`
-**Purpose:** Analyzes model performance across different training data fractions to evaluate data efficiency.
-
-**Key Features:**
-- Extracts test accuracy from training logs for multiple data fractions (10%, 32.5%, 55%, 77.5%, 100%)
-- Generates learning curves comparing multiple models on the same dataset
-- Computes data efficiency metrics:
-  - Accuracy gap between 10% and 100% data
-  - Data efficiency score (ratio of performance at limited vs. full data)
-  - Training data required to reach 90% of final performance
-- Produces both linear and log-scale visualizations
+Analyzes model performance across different training data fractions to evaluate data efficiency.
 
 **Example Usage:**
 ```bash
@@ -90,27 +81,9 @@ python analyze_learning_curve.py \
   --dataset CIFAR
 ```
 
-**Outputs:**
-- Learning curve plots (linear and log-scale)
-- Data efficiency metrics in JSON format
-- Per-model performance analysis
-
----
 
 ### `analyze_robustness_vs_data.py`
-**Purpose:** Evaluates how model robustness to corruptions scales with training data size.
-
-**Key Features:**
-- Tests multiple corruption types (Gaussian noise, blur, brightness, contrast, fog, JPEG compression, pixelation)
-- Evaluates clean and corrupted accuracy across different training data fractions
-- Supports multi-model comparison with different line styles
-- Focuses on severity level 3 for consistent comparison
-
-**Corruption Types:**
-- **Noise:** Gaussian noise, shot noise, impulse noise
-- **Blur:** Gaussian blur
-- **Weather:** Fog
-- **Digital:** JPEG compression, pixelation, brightness, contrast
+Evaluates how model robustness to corruptions scales with training data size.
 
 **Example Usage:**
 ```bash
@@ -122,22 +95,9 @@ python analyze_robustness_vs_data.py \
   --device cuda
 ```
 
-**Outputs:**
-- Clean accuracy vs. training data plots
-- Robustness curves for each corruption type
-- JSON files with detailed accuracy measurements
-
----
 
 ### `analyze_geometric_invariance.py`
-**Purpose:** Tests model robustness to geometric transformations and color variations.
-
-**Key Features:**
-- **Rotation Test:** Evaluates performance under rotations (30°, 60°, 90°, 120°, 150°, 180°)
-- **Color Test:** Compares clean RGB vs. grayscale performance
-- **Crop Test:** Tests robustness to different crop scales (0.25x, 0.5x, 0.75x, 1.0x)
-- Multi-model comparison with configurable model lists
-- Optional visualization of transformed images
+Tests model robustness to geometric transformations and color variations.
 
 **Example Usage:**
 ```bash
@@ -148,30 +108,8 @@ python analyze_geometric_invariance.py \
   --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
   --device cuda
 ```
-
-**Outputs:**
-- Rotation invariance curves
-- Color/grayscale comparison plots
-- Crop scale invariance analysis
-- Optional sample image grids showing transformations
-
----
-
 ### `analyze_domain_shift.py`
-**Purpose:** Evaluates model transferability across different domains through fine-tuning experiments.
-
-**Key Features:**
-- Feature transfer from source to target dataset
-- Fine-tuning with target domain data
-- Compares transfer learning performance across models
-- Tests domain adaptation capability (e.g., CIFAR → EuroSAT)
-
-**Workflow:**
-1. Load checkpoint trained on source dataset (frac=1.0)
-2. Initialize new classifier head for target dataset
-3. Transfer backbone weights
-4. Fine-tune on target dataset
-5. Evaluate and compare final accuracy
+Evaluates model transferability across different domains through fine-tuning experiments.
 
 **Example Usage:**
 ```bash
@@ -185,25 +123,9 @@ python analyze_domain_shift.py \
   --device cuda
 ```
 
-**Outputs:**
-- Transfer learning accuracy comparison
-- Bar plots showing domain adaptation performance
-- JSON files with detailed transfer metrics
-
----
-
 ### `analyze_rep_similarity.py`
-**Purpose:** Measures representation similarity between SHViT and baseline models using multiple metrics.
+Measures representation similarity between SHViT and baseline models using multiple metrics.
 
-**Key Features:**
-- **CKA (Centered Kernel Alignment):** Measures overall representation similarity
-- **Class-mean cosine similarity:** Compares per-class feature representations
-- Extracts penultimate layer features for comparison
-- Works with any two models with compatible architectures
-
-**Metrics Explained:**
-- **CKA Score:** Value between 0 and 1, where 1 indicates identical representations
-- **Class-mean Cosine:** Average cosine similarity between class centroids
 
 **Example Usage:**
 ```bash
@@ -217,28 +139,8 @@ python analyze_rep_similarity.py \
   --output-dir outputs/rep_similarity
 ```
 
-**Outputs:**
-- CKA similarity scores
-- Per-class cosine similarity metrics
-- Optional raw feature matrices (with `--save-features`)
-
----
-
 ### `analyze_representations.py`
-**Purpose:** Comprehensive layer-wise representation analysis comparing SHViT and DeiT architectures.
-
-**Key Features:**
-- Layer-wise feature extraction from multiple network stages
-- CKA similarity matrices across all layer pairs
-- CCA (Canonical Correlation Analysis) for subspace similarity
-- Feature statistics (mean, variance, sparsity)
-- Similarity progression through network depth
-- Separate analysis for early, middle, and late layers
-
-**Visualizations:**
-- CKA heatmap showing similarity between all layer pairs
-- Feature statistics comparison (mean, std, sparsity, max, min)
-- Similarity progression by network depth (early/middle/late/output)
+Comprehensive layer-wise representation analysis comparing SHViT and DeiT architectures.
 
 **Example Usage:**
 ```bash
@@ -253,27 +155,9 @@ python analyze_representations.py \
   --output-dir representation_analysis/
 ```
 
-**Outputs:**
-- CKA matrix heatmap
-- Feature statistics plots
-- Similarity progression analysis
-- Comprehensive JSON with all metrics
-
----
-
 ### `analyze_gradcam_compare.py`
-**Purpose:** Qualitative saliency map comparison to understand model attention patterns.
+Qualitative saliency map comparison to understand model attention patterns.
 
-**Key Features:**
-- Gradient-based saliency map computation
-- Identifies examples where one model is robust while the other fails
-- Compares attention patterns on clean vs. corrupted images
-- Four-panel visualization showing both models on both conditions
-
-**Search Strategy:**
-- Finds cases where Model A is correct but Model B fails under corruption
-- Finds symmetric cases where Model B is correct but Model A fails
-- Requires both models to be correct on clean images
 
 **Example Usage:**
 ```bash
@@ -289,25 +173,8 @@ python analyze_gradcam_compare.py \
   --output-dir outputs/saliency
 ```
 
-**Outputs:**
-- Four-panel saliency visualizations (clean + corrupted for both models)
-- Examples highlighting differential robustness patterns
-
----
-
 ### `analyze_patchify_stride.py`
-**Purpose:** Investigates how patchify stride affects domain generalization and performance.
-
-**Key Features:**
-- Tests multiple patchify strides: 4, 8, 16 (original), 32
-- Evaluates impact on spatial resolution and token count
-- Measures domain-specific sensitivity to stride changes
-- Custom SHViT implementation with configurable stride
-
-**Research Questions:**
-- Does patchify stride interact with domain characteristics?
-- How does stride affect spatial complexity handling?
-- What is the optimal stride for different dataset types?
+Investigates how patchify stride affects domain generalization and performance.
 
 **Example Usage:**
 ```bash
@@ -317,13 +184,6 @@ python analyze_patchify_stride.py \
   --checkpoint-dir stride_experiments \
   --strides 8 16 32
 ```
-
-**Outputs:**
-- Stride sensitivity analysis by domain
-- Number of patches vs. accuracy
-- Domain variance metrics (sensitivity to stride)
-
----
 
 ## Original SHViT
 
