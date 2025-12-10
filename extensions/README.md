@@ -66,7 +66,7 @@ Analyzes model performance across different training data fractions to evaluate 
 
 **Example Usage:**
 ```bash
-python analyze_learning_curve.py \
+python extensions/analysis/analyze_learning_curve.py \
   --results-dir results/ \
   --dataset CIFAR
 ```
@@ -77,7 +77,7 @@ Evaluates how model robustness to corruptions scales with training data size.
 
 **Example Usage:**
 ```bash
-python analyze_robustness_vs_data.py \
+python extensions/analysis/analyze_robustness_vs_data.py \
   --dataset CIFAR \
   --data-path dataset \
   --checkpoint-dir results \
@@ -91,7 +91,7 @@ Tests model robustness to geometric transformations and color variations.
 
 **Example Usage:**
 ```bash
-python analyze_geometric_invariance.py \
+python extensions/analysis/analyze_geometric_invariance.py \
   --dataset CIFAR \
   --data-path dataset/ \
   --checkpoint-dir results \
@@ -103,7 +103,7 @@ Evaluates model transferability across different domains through fine-tuning exp
 
 **Example Usage:**
 ```bash
-python analyze_domain_shift.py \
+python extensions/analysis/analyze_domain_shift.py \
   --source-dataset CIFAR \
   --target-dataset EUROSAT \
   --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
@@ -119,7 +119,7 @@ Measures representation similarity between SHViT and baseline models using multi
 
 **Example Usage:**
 ```bash
-python analyze_rep_similarity.py \
+python extensions/analysis/analyze_rep_similarity.py \
   --model-a shvit_s2 \
   --ckpt-a results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
   --model-b deit_tiny_patch16_224 \
@@ -134,7 +134,7 @@ Comprehensive layer-wise representation analysis comparing SHViT and DeiT archit
 
 **Example Usage:**
 ```bash
-python analyze_representations.py \
+python extensions/analysis/analyze_representations.py \
   --shvit-checkpoint results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
   --deit-checkpoint results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth \
   --shvit-model shvit_s2 \
@@ -151,7 +151,7 @@ Qualitative saliency map comparison to understand model attention patterns.
 
 **Example Usage:**
 ```bash
-python analyze_gradcam_compare.py \
+python extensions/analysis/analyze_gradcam_compare.py \
   --model-a shvit_s2 \
   --ckpt-a results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
   --model-b deit_tiny_patch16_224 \
@@ -168,7 +168,7 @@ Investigates how patchify stride affects domain generalization and performance.
 
 **Example Usage:**
 ```bash
-python analyze_patchify_stride.py \
+python extensions/analysis/analyze_patchify_stride.py \
   --model shvit_s2 \
   --datasets CIFAR EUROSAT MEDMNIST \
   --checkpoint-dir stride_experiments \
