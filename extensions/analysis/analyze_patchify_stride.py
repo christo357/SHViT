@@ -24,6 +24,10 @@ import torch
 import torch.nn as nn
 from pathlib import Path
 from typing import Dict, List
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from timm.models import create_model
 from data.datasets import build_dataset

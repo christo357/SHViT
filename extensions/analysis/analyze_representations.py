@@ -19,6 +19,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 import json
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from timm.models import create_model
 from data.datasets import build_dataset

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=obj_outofdist_test # Job name
-#SBATCH --output=logs/%j.out  # Output file (%x is job name, %j is jobID)
-#SBATCH --error=logs/%j.err   # Error file
+#SBATCH --output=../../logs/%j.out  # Output file (%x is job name, %j is jobID)
+#SBATCH --error=../../logs/%j.err   # Error file
 #SBATCH --time=72:00:00                # walltime
 #SBATCH --ntasks=4                     # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1                      # number of nodes
@@ -48,7 +48,7 @@ if [ -n "$OUTPUT_DIR" ]; then
     OUTPUT_ARG="--output_dir ${OUTPUT_DIR}"
 fi
 
-torchrun --nproc_per_node=2 --master_port 12345 main.py \
+torchrun --nproc_per_node=2 --master_port 12345 ../../main.py \
     --model $MODEL \
     --data-set $DATASET \
     --data-path $DATA_PATH \

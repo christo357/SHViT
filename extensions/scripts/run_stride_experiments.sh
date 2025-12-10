@@ -2,8 +2,8 @@
 
 #!/bin/bash
 #SBATCH --job-name=shvit_stride_exp
-#SBATCH --output=logs/%j.out
-#SBATCH --error=logs/%j.err
+#SBATCH --output=../../logs/%j.out
+#SBATCH --error=../../logs/%j.err
 #SBATCH --time=72:00:00
 #SBATCH --ntasks=4
 #SBATCH --nodes=1
@@ -63,7 +63,7 @@ do
     echo "Training ${MODEL} with stride ${stride} on ${DATASET}"
     echo "Output: ${OUTPUT_DIR}"
     
-    # torchrun --nproc_per_node=2 --master_port 12345 main.py \
+    # torchrun --nproc_per_node=2 --master_port 12345 ../../main.py \
     #     --model $MODEL \
     #     --data-set $DATASET \
     #     --data-path $DATA_PATH \
@@ -85,4 +85,4 @@ echo "All Stride Experiments Complete!"
 echo "=========================================="
 echo ""
 echo "To analyze results, run:"
-echo "python analyze_patchify_stride.py --model ${MODEL} --datasets ${DATASET} --checkpoint-dir ${BASE_OUTPUT}"
+echo "python extensions/analysis/analyze_patchify_stride.py --model ${MODEL} --datasets ${DATASET} --checkpoint-dir ${BASE_OUTPUT}"

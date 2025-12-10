@@ -37,7 +37,7 @@ read -p "Press Enter to continue..."
 mkdir -p "$OUTPUT_DIR"
 
 # Run analysis
-python analyze_representations.py \
+python extensions/analysis/analyze_representations.py \
     --shvit-checkpoint "$SHVIT_CHECKPOINT" \
     --deit-checkpoint "$DEIT_CHECKPOINT" \
     --shvit-model "$SHVIT_MODEL" \

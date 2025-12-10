@@ -2,8 +2,8 @@
 
 #!/bin/bash
 #SBATCH --job-name=shvit_learning_curve # Job name
-#SBATCH --output=logs/%j.out  # Output file (%x is job name, %j is jobID)
-#SBATCH --error=logs/%j.err   # Error file
+#SBATCH --output=../../logs/%j.out  # Output file (%x is job name, %j is jobID)
+#SBATCH --error=../../logs/%j.err   # Error file
 #SBATCH --time=72:00:00                # walltime
 #SBATCH --ntasks=4                     # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1                      # number of nodes
@@ -75,7 +75,7 @@ do
         echo "No existing output directory, starting from scratch"
     fi
     
-    torchrun --nproc_per_node=2 main.py \
+    torchrun --nproc_per_node=2 ../../main.py \
         --model $MODEL \
         --data-set $DATASET \
         --data-path $DATA_PATH \
