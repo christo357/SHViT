@@ -5,8 +5,6 @@ This work presents a comprehensive analysis of the SHViT model, comparing it wit
 
 **Contributors:** [Vishal V](https://github.com/VizalV) • [Priyal Garg](https://github.com/gargpriyal)
 
-> *Note: If the GitHub usernames above are incorrect, please provide the correct ones to update the links.*
-
 ---
 Our Analysis can be found in the `extensions` folder
 
