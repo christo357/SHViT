@@ -1,12 +1,3 @@
-# make_corruption_examples.py
-
-
-'''python make_corruption_examples.py \
-  --dataset CIFAR \
-  --data-path dataset \
-  --output-dir outputs/robustness \
-  --sample-index 0 \
-  --severity 3'''
 import argparse
 from pathlib import Path
 import sys
@@ -23,10 +14,6 @@ import numpy as np
 from data.datasets import build_dataset
 import model  # noqa: F401  # to register SHViT etc.
 
-
-# ---------------------------------------------------------------------------
-# Corruption dataset (same as your robustness code + motion_blur)
-# ---------------------------------------------------------------------------
 
 class CorruptionDataset(Dataset):
     """Apply corruptions to a dataset"""
@@ -92,9 +79,6 @@ class CorruptionDataset(Dataset):
             return img
 
 
-# ---------------------------------------------------------------------------
-# Dataset helper (same pattern as robustness / geometric scripts)
-# ---------------------------------------------------------------------------
 
 def build_eval_dataset(args):
     eval_args = argparse.Namespace(**vars(args))
@@ -113,10 +97,6 @@ def build_eval_dataset(args):
     dataset_val, _ = build_dataset(is_train=False, args=eval_args)
     return dataset_val
 
-
-# ---------------------------------------------------------------------------
-# Plot helpers
-# ---------------------------------------------------------------------------
 
 def _tensor_to_image(img: torch.Tensor):
     """
@@ -187,10 +167,6 @@ def make_corruption_panel(args):
     plt.close(fig)
     print(f"Saved panel to {out_path}")
 
-
-# ---------------------------------------------------------------------------
-# Argparser & main
-# ---------------------------------------------------------------------------
 
 def get_args_parser():
     parser = argparse.ArgumentParser(

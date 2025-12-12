@@ -1,12 +1,3 @@
-"""
-Visualize Patchify Stride Analysis Results
-
-Creates plots showing:
-1. Accuracy vs Stride for each domain
-2. Stride sensitivity by domain
-3. Correlation with dataset characteristics
-"""
-
 import argparse
 import json
 import matplotlib.pyplot as plt
@@ -196,7 +187,7 @@ def main():
     
     plot_stride_analysis(args.results_file, args.output_dir)
     
-    print("\n✓ Visualization complete!")
+    print("\n Visualization complete!")
 
 
 if __name__ == '__main__':

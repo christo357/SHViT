@@ -1,28 +1,3 @@
-"""
-Geometric & Color Invariance Analysis
-
-Evaluates how robust models are to:
-  - Rotations (e.g., 30, 60, 90, 120, 150, 180 degrees)
-  - Color changes (RGB vs grayscale)
-  - Cropping (different crop scales, then upsampled back)
-
-Supports multiple models:
-  - default: baseline + shvit_s2
-  - or pass --models modelA modelB modelC ...
-
-Checkpoints:
-  <checkpoint_dir>/<model>_<DATASET>_frac1.0/checkpoint_99.pth (CIFAR)
-  <checkpoint_dir>/<model>_<DATASET>_frac1.0/checkpoint_29.pth (EUROSAT/MEDMNIST)
-
-Example:
-  python analyze_geometric_invariance.py \
-    --dataset CIFAR \
-    --data-path dataset/ \
-    --checkpoint-dir results \
-    --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
-    --device cuda
-"""
-
 import argparse
 from pathlib import Path
 from typing import Tuple, List, Optional, Dict
@@ -46,13 +21,6 @@ import model  # noqa: F401 - registers SHViT models
 
 from torchvision.transforms import functional as TF
 from torchvision.transforms.functional import InterpolationMode
-
-
-# ------------------------------------------------------------------
-# Geometric corruption wrapper
-# ------------------------------------------------------------------
-
-
 class GeometricCorruptionDataset(Dataset):
     """
     Wraps an existing dataset and applies geometric / color changes
@@ -122,11 +90,6 @@ class GeometricCorruptionDataset(Dataset):
         else:
             # No change
             return img
-
-
-# ------------------------------------------------------------------
-# Dataset + model helpers (reuse your robustness setup)
-# ------------------------------------------------------------------
 
 
 def build_eval_dataset_and_num_classes(args) -> Tuple[torch.utils.data.Dataset, int]:
@@ -253,11 +216,6 @@ def evaluate_on_dataset(
     return float(stats["acc1"])
 
 
-# ------------------------------------------------------------------
-# Plotting helpers (multi-model)
-# ------------------------------------------------------------------
-
-
 def plot_multi_model_curve(
     x_values: List[float],
     acc_by_model: Dict[str, List[float]],
@@ -314,12 +272,6 @@ def plot_multi_model_curve(
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_path}")
     plt.close()
-
-
-# -----------------------------------------------------------------
-# Save geometric sampler
-# -----------------------------------------------------------------
-
 
 def _tensor_to_image(img: torch.Tensor):
     """
@@ -462,12 +414,6 @@ def save_geometric_sample_grids(args, dataset_val):
             out_path=out_path,
         )
 
-
-# ------------------------------------------------------------------
-# Specific tests (multi-model)
-# ------------------------------------------------------------------
-
-
 def run_rotation_test(
     args,
     dataset_val,
@@ -583,12 +529,6 @@ def run_crop_test(
             print(f"  {name:25s} Acc@1: {acc:.2f}%")
 
     return scales, acc_by_model
-
-
-# ------------------------------------------------------------------
-# Argument parsing & main
-# ------------------------------------------------------------------
-
 
 def get_args_parser():
     parser = argparse.ArgumentParser(

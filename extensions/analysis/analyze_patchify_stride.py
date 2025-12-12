@@ -1,22 +1,3 @@
-"""
-Test How Patchify Stride Affects Domain Generalization
-
-Compares SHViT with different patchify strides across domains:
-- Stride 4 (2 conv layers): More patches, higher resolution
-- Stride 8 (3 conv layers): Medium patches
-- Stride 16 (4 conv layers): Original SHViT, fewer patches
-- Stride 32 (5 conv layers): Very few patches
-
-Research Question: Does patchify stride interact with domain characteristics 
-(spatial complexity, dataset size, detail requirements)?
-
-To run:
-python analyze_patchify_stride.py 
-    --model shvit_s2 
-    --datasets CIFAR 
-    --checkpoint-dir results/
-"""
-
 import argparse
 import json
 import numpy as np

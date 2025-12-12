@@ -1,12 +1,3 @@
-"""
-Representation Analysis: Compare learned features between SHViT and DeiT models
-This script analyzes feature similarity using:
-1. CKA (Centered Kernel Alignment) - measures representation similarity
-2. CCA (Canonical Correlation Analysis) - measures subspace similarity
-3. Feature statistics (mean, variance, sparsity)
-4. Attention pattern analysis (for attention-based models)
-"""
-
 import argparse
 import torch
 import torch.nn as nn

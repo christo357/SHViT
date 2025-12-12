@@ -1,32 +1,3 @@
-"""
-Qualitative Saliency Maps for SHViT vs DeiT (no external deps)
-
-This script:
-  - Loads two models (e.g., shvit_s2 and deit_tiny_patch16_224) with checkpoints.
-  - Uses the CIFAR / EuroSAT validation set.
-  - Applies Gaussian noise corruption.
-  - Finds:
-      (1) an example where Model A (e.g. SHViT) is robust but Model B (e.g. DeiT) fails,
-      (2) an example where Model B is robust but Model A fails.
-  - Computes gradient-based saliency maps (d logit / d input pixels) for:
-      - Clean image (both models)
-      - Corrupted image (both models)
-  - Saves 4-panel figures for each case.
-
-This gives you qualitative "where does the model look?" comparisons for the thesis.
-
-python analyze_gradcam_compare.py \
-  --model-a shvit_s2 \
-  --ckpt-a results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
-  --model-b deit_tiny_patch16_224 \
-  --ckpt-b results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth \
-  --dataset CIFAR \
-  --data-path dataset/ \
-  --severity 3 \
-  --max-search 300 \
-  --output-dir analysis/saliency_cifar
-"""
-
 import argparse
 from pathlib import Path
 import sys
@@ -45,11 +16,6 @@ from timm.models import create_model
 from data.datasets import build_dataset
 import model  # noqa: F401  # register SHViT models via import side-effect
 
-
-# ------------------------------------------------------------------
-# Basic corruption: Gaussian noise in image space
-# ------------------------------------------------------------------
-
 def apply_gaussian_noise(img: torch.Tensor, severity: int) -> torch.Tensor:
     """
     Apply Gaussian noise to an image tensor in [0, 1].
@@ -62,10 +28,6 @@ def apply_gaussian_noise(img: torch.Tensor, severity: int) -> torch.Tensor:
     out = torch.clamp(img + noise, 0.0, 1.0)
     return out
 
-
-# ------------------------------------------------------------------
-# Dataset & normalization utilities
-# ------------------------------------------------------------------
 
 IMAGENET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
 IMAGENET_STD = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
@@ -119,10 +81,6 @@ def unnormalize_for_vis(img_norm: torch.Tensor) -> np.ndarray:
     img_np = img.permute(1, 2, 0).numpy()
     return img_np
 
-
-# ------------------------------------------------------------------
-# Prediction and saliency
-# ------------------------------------------------------------------
 
 def predict(model: nn.Module, x: torch.Tensor, device: torch.device):
     """
@@ -187,10 +145,6 @@ def overlay_saliency_on_rgb(rgb: np.ndarray, saliency: np.ndarray, alpha: float 
     overlay = np.clip(overlay, 0.0, 1.0)
     return overlay
 
-
-# ------------------------------------------------------------------
-# Search for interesting examples
-# ------------------------------------------------------------------
 
 def find_interesting_examples(
     model_a, model_b, loader, device, severity, max_search=200
@@ -259,9 +213,6 @@ def find_interesting_examples(
     return idx_robust_a, idx_robust_b
 
 
-# ------------------------------------------------------------------
-# Plotting
-# ------------------------------------------------------------------
 
 def plot_four_panel(
     clean_rgb,
@@ -313,10 +264,6 @@ def plot_four_panel(
     plt.close(fig)
     print(f"Saved figure: {out_path}")
 
-
-# ------------------------------------------------------------------
-# CLI & main
-# ------------------------------------------------------------------
 
 def get_args_parser():
     parser = argparse.ArgumentParser("SHViT vs DeiT saliency visualization", add_help=True)

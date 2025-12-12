@@ -1,26 +1,3 @@
-"""
-Representation Analysis:
-How similar are SHViT's learned features to those of standard ViTs?
-
-This script:
-  - Loads two trained models (e.g., shvit_s2 and vit_tiny_patch16_224),
-  - Extracts penultimate-layer features on the validation set,
-  - Computes CKA similarity between their representations,
-  - Computes class-mean cosine similarity,
-  - Saves metrics and (optionally) raw features.
-
-Usage example (CIFAR-100):
-
-python analyze_rep_similarity.py \
-  --model-a shvit_s2 \
-  --ckpt-a results/shvit_s2_CIFAR_frac1.0/checkpoint_99.pth \
-  --model-b deit_tiny_patch16_224 \
-  --ckpt-b results/deit_tiny_patch16_224_CIFAR_frac1.0/checkpoint_99.pth \
-  --dataset CIFAR \
-  --data-path dataset/ \
-  --output-dir outputs/rep_similarity_cifar
-"""
-
 import argparse
 import json
 from pathlib import Path

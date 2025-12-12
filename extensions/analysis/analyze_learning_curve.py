@@ -1,10 +1,3 @@
-"""
-Analyze Learning Curve Results
-
-Extracts test accuracy from log files and creates visualization
-showing model performance vs. training data size.
-"""
-
 import json
 import argparse
 from pathlib import Path

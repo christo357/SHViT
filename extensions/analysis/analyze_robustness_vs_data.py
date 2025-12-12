@@ -1,26 +1,3 @@
-"""
-Robustness Analysis vs Training Data Size (Severity 3 only)
-Multi-model comparison (e.g., SHViT-S2, DeiT-Tiny, SHViT-S1, ...).
-
-- Evaluates clean accuracy and robustness to severity = 3
-  for multiple corruption types and multiple models.
-- X-axis: training data fraction (%)
-- Different color per corruption
-- Different line style per model (solid, dashed, dashdot, dotted, ...).
-
-Outputs (in outputs/robustness/):
-  - robustness_sev3_<model>_<DATASET>.json  for each model
-  - <DATASET>_clean_multi_model.png
-  - <DATASET>_robustness_sev3_multi_model.png
-  
-python analyze_robustness_vs_data.py \
-  --dataset CIFAR \
-  --data-path dataset \
-  --checkpoint-dir results \
-  --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
-  --device cuda
-"""
-
 import argparse
 import json
 from pathlib import Path

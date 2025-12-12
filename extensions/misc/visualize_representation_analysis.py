@@ -1,8 +1,3 @@
-"""
-Additional Visualization Script for Representation Analysis
-Creates supplementary plots and detailed analysis
-"""
-
 import json
 import numpy as np
 import matplotlib.pyplot as plt

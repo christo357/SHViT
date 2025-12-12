@@ -1,30 +1,3 @@
-"""
-Domain Shift with Feature Transfer + Fine-Tuning (Single Checkpoint per Model)
-
-For each model:
-
-  1. Load checkpoint trained on SOURCE_DATASET with frac1.0.
-  2. Create a new model with num_classes = TARGET_NUM_CLASSES.
-  3. Load all matching weights from the source checkpoint
-     (backbone transfer; classifier head randomly initialized).
-  4. Fine-tune on TARGET_DATASET (train split).
-  5. Evaluate on TARGET_DATASET (val split) and record Acc@1.
-
-Produces:
-  - JSON: accuracies per model
-  - Bar plot: Top-1 accuracy on target after fine-tuning, one bar per model.
-
-Example:
-  python analyze_domain_shift.py \
-    --source-dataset CIFAR \
-    --target-dataset EUROSAT \
-    --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
-    --data-path dataset \
-    --checkpoint-dir results \
-    --ft-epochs 10 \
-    --device cuda
-"""
-
 import argparse
 import json
 from pathlib import Path
@@ -99,11 +72,6 @@ def build_train_val_for_dataset(
     return train_dataset, val_dataset, nb_classes
 
 
-# ---------------------------------------------------------------------
-# Checkpoint loading with flexible shape matching
-# ---------------------------------------------------------------------
-
-
 def load_state_dict_flex(net: nn.Module, checkpoint: dict, model_key: str = "model"):
     """
     Load as many matching keys as possible (by name and shape).
@@ -171,11 +139,6 @@ def init_model_for_transfer(
     return net
 
 
-# ---------------------------------------------------------------------
-# Fine-tuning
-# ---------------------------------------------------------------------
-
-
 def train_one_epoch(
     model: nn.Module,
     criterion: nn.Module,
@@ -224,11 +187,6 @@ def eval_acc1(
     return float(stats["acc1"])
 
 
-# ---------------------------------------------------------------------
-# Plotting
-# ---------------------------------------------------------------------
-
-
 def plot_bar_results(
     source_dataset: str,
     target_dataset: str,
@@ -259,11 +217,6 @@ def plot_bar_results(
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     print(f"\nSaved bar plot to {output_path}")
     plt.close()
-
-
-# ---------------------------------------------------------------------
-# Main experiment
-# ---------------------------------------------------------------------
 
 
 def run_domain_shift_finetune_simple(args):
@@ -364,11 +317,6 @@ def run_domain_shift_finetune_simple(args):
     # Plot bar chart
     plot_path = out_dir / f"domain_shift_finetune_{src}_to_{tgt}_singlefrac.png"
     plot_bar_results(src, tgt, acc_by_model, plot_path)
-
-
-# ---------------------------------------------------------------------
-# Argparser
-# ---------------------------------------------------------------------
 
 
 def get_args_parser():

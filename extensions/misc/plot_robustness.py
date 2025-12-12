@@ -1,43 +1,3 @@
-#!/usr/bin/env python
-"""
-Plot multi-model robustness vs training data size (subplots by corruption).
-
-Reads JSON files produced by analyze_robustness_vs_data.py, e.g.:
-
-  outputs/robustness_multi/robustness_sev3_shvit_s2_CIFAR.json
-  outputs/robustness_multi/robustness_sev3_deit_tiny_patch16_224_CIFAR.json
-  ...
-
-Each JSON is expected to have structure:
-
-  {
-    "model": <str>,
-    "dataset": <str>,
-    "fractions": [0.1, 0.325, ...],
-    "corruptions": ["gaussian_noise", ...],
-    "severities": [3],
-    "clean": { "<frac>": acc },
-    "corrupt": {
-        "<corruption>": {
-            "<severity>": { "<frac>": acc }
-        }
-    }
-  }
-
-This script makes a grid of subplots:
-  - One subplot per corruption type (including "Clean")
-  - X-axis: training fraction (%)
-  - Color: model
-  - Shared x/y axes for easy comparison
-  
-  python plot_robustness.py \
-  --dataset CIFAR \
-  --severity 1 \
-  --models shvit_s2 deit_tiny_patch16_224 mobilenetv2_100 \
-  --input-dir outputs/robustness_multi_sev1 \
-  --output-dir outputs/robustness_multi_sev1
-"""
-
 import argparse
 import json
 from pathlib import Path
@@ -47,10 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-
-# ---------------------------------------------------------------------------
-# JSON loading helpers
-# ---------------------------------------------------------------------------
 
 def load_results_json(json_path: Path) -> Dict:
     with open(json_path, "r") as f:
@@ -102,9 +58,6 @@ def collect_results_from_dir(
     return all_results
 
 
-# ---------------------------------------------------------------------------
-# Plotting – subplots by corruption (includes Clean)
-# ---------------------------------------------------------------------------
 
 def plot_multi_model_robustness_subplots_by_corruption(
     all_results: Dict[str, Dict],
@@ -248,11 +201,6 @@ def plot_multi_model_robustness_subplots_by_corruption(
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"[INFO] Saved subplot robustness figure: {output_path}")
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
 
 def get_args_parser():
     parser = argparse.ArgumentParser(
