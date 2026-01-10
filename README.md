@@ -1,9 +1,13 @@
+# Exploring the Generalization, Efficiency, and Inductive Bias of SHViT Across Visual Domains
 
 This repository is built upon the official implementation of [**SHViT: Single-Head Vision Transformer with Memory Efficient Macro Design**](https://arxiv.org/abs/2401.16456) (Seokju Yun, Youngmin Ro. CVPR 2024). 
 
 This work presents a comprehensive analysis of the SHViT model, comparing it with baseline models (MobileNetV2 and DeiT-Tiny) across various dimensions including robustness, data efficiency, representation similarity, and geometric invariance.
 
 **Contributors:** [Vishal V](https://github.com/VizalV) • [Priyal Garg](https://github.com/gargpriyal)
+
+Analysis Report : [SHViT_Project_Report-3.pdf](https://github.com/user-attachments/files/24537558/SHViT_Project_Report-3.pdf)
+
 
 ---
 Our Analysis can be found in the `extensions` folder
