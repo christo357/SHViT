@@ -6,7 +6,6 @@ This work presents a comprehensive analysis of the SHViT model, comparing it wit
 
 **Contributors:** [Vishal V](https://github.com/VizalV) • [Priyal Garg](https://github.com/gargpriyal)
 
-Analysis Report : [SHViT_Project_Report-3.pdf](https://github.com/user-attachments/files/24537558/SHViT_Project_Report-3.pdf)
 
 
 ---
